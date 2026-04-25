@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Gift, Heart, Copy, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -53,6 +54,21 @@ export function WeddingRegistry() {
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
         {/* Header */}
         <div className="text-center mb-8 animate-fade-in">
+          {/* Logo */}
+          {/* <div className="flex justify-center mb-6">
+            <div className="bg-white/95 rounded-2xl p-4 shadow-2xl shadow-black/20 backdrop-blur-sm">
+              <div className="relative w-32 h-32 md:w-32 md:h-32">
+                <Image
+                  src="/rr.png"
+                  alt="Ronald & Ryane"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </div>
+          </div> */}
+
           <div className="flex items-center justify-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-primary animate-pulse" />
             <span className="text-white/90 font-sans text-sm tracking-[0.3em] uppercase">
