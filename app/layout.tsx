@@ -1,54 +1,48 @@
-import type { Metadata } from 'next'
-import { Cormorant_Garamond, Montserrat } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
-import './globals.css'
+import type { Metadata } from "next";
+import { Cormorant_Garamond, Montserrat } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import "./globals.css";
 
-const cormorant = Cormorant_Garamond({ 
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ['400', '500', '600'],
-  variable: '--font-serif'
+  weight: ["400", "500", "600"],
+  variable: "--font-serif",
 });
 
-const montserrat = Montserrat({ 
+const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ['300', '400', '500'],
-  variable: '--font-sans'
+  weight: ["300", "400", "500"],
+  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
-  title: 'Ronald & Ryane | Lista de Presentes',
-  description: 'Lista de presentes do casamento de Ronald e Ryane',
-  generator: 'v0.app',
+  title: "Ronald & Ryane | Lista de Presentes",
+  description: "Lista de presentes do casamento de Ronald e Ryane",
+  generator: "v0.app",
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
+        url: "/rr.png",
+        type: "image/png",
       },
     ],
-    apple: '/apple-icon.png',
+    apple: "/rr.png",
   },
-}
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="pt-BR" className="bg-background">
-      <body className={`${cormorant.variable} ${montserrat.variable} font-sans antialiased`}>
+      <body
+        className={`${cormorant.variable} ${montserrat.variable} font-sans antialiased`}
+      >
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>
-  )
+  );
 }
