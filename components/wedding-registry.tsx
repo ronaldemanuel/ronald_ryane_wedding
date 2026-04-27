@@ -38,7 +38,7 @@ export function WeddingRegistry() {
 
       {/* Floating particles animation */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(30)].map((_, i) => (
           <div
             key={i}
             className="absolute w-2 h-2 bg-white/30 rounded-full animate-float"
@@ -58,7 +58,7 @@ export function WeddingRegistry() {
         <div className="text-center mb-8 animate-fade-in">
           {/* Logo */}
           {/* <div className="flex justify-center mb-6">
-            <div className="bg-white/95 rounded-2xl p-4 shadow-2xl shadow-black/20 backdrop-blur-sm">
+            <div className="bg-white/95 rounded-2xl p-0 shadow-2xl shadow-black/20 backdrop-blur-sm">
               <div className="relative w-32 h-32 md:w-32 md:h-32">
                 <Image
                   src="/rr.png"
@@ -71,12 +71,11 @@ export function WeddingRegistry() {
             </div>
           </div> */}
           <div className="flex items-center justify-center gap-2 mb-4">
-            {/* Ícone de Sparkles alterado para branco com sombra forte */}
             <Sparkles className="w-5 h-5 text-white/90 drop-shadow-lg animate-pulse" />
             <span className="text-white/90 font-sans text-sm tracking-[0.3em] uppercase ">
               Nosso Casamento
             </span>
-            {/* Segundo ícone também alterado */}
+
             <Sparkles className="w-5 h-5 text-white/90 drop-shadow-lg animate-pulse" />
           </div>
 
