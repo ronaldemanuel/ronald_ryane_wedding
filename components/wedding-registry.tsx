@@ -25,12 +25,14 @@ export function WeddingRegistry() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-04-24%20at%2021.12.03-gP5qob0ZQQ7ACl8TjUqCObLBNV3mLf.jpeg')`,
-        }}
-      >
+      <div className="absolute inset-0">
+        <Image
+          src="/image/RR-Vintage.png"
+          alt="Ronald & Ryane"
+          fill
+          className="object-cover object-[center_10%]"
+          priority
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50" />
       </div>
 
@@ -68,13 +70,14 @@ export function WeddingRegistry() {
               </div>
             </div>
           </div> */}
-
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-            <span className="text-white/90 font-sans text-sm tracking-[0.3em] uppercase">
+            {/* Ícone de Sparkles alterado para branco com sombra forte */}
+            <Sparkles className="w-5 h-5 text-white/90 drop-shadow-lg animate-pulse" />
+            <span className="text-white/90 font-sans text-sm tracking-[0.3em] uppercase ">
               Nosso Casamento
             </span>
-            <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+            {/* Segundo ícone também alterado */}
+            <Sparkles className="w-5 h-5 text-white/90 drop-shadow-lg animate-pulse" />
           </div>
 
           <h1 className="font-serif text-5xl md:text-7xl font-medium text-white mb-3 drop-shadow-lg text-balance">
