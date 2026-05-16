@@ -20,9 +20,10 @@ const MUSIC_VOLUME = parseFloat(process.env.NEXT_PUBLIC_MUSIC_VOLUME || "0.2");
 
 export function WeddingRegistry() {
   const [copied, setCopied] = useState(false);
-  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(true); // otimista: começa como "tocando"
   const audioRef = useRef<HTMLAudioElement>(null);
-  const hasInteracted = useRef(false);
+  const audioStartedRef = useRef(false); // áudio realmente iniciou?
+  const userPausedRef = useRef(false); // usuário pausou explicitamente?
 
   const copyToClipboard = async () => {
     try {
@@ -39,11 +40,16 @@ export function WeddingRegistry() {
     if (!audio) return;
     if (musicPlaying) {
       audio.pause();
+      userPausedRef.current = true;
       setMusicPlaying(false);
     } else {
+      userPausedRef.current = false;
       audio
         .play()
-        .then(() => setMusicPlaying(true))
+        .then(() => {
+          audioStartedRef.current = true;
+          setMusicPlaying(true);
+        })
         .catch(() => {});
     }
   };
@@ -52,24 +58,43 @@ export function WeddingRegistry() {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const startMusic = () => {
-      if (hasInteracted.current) return;
-      hasInteracted.current = true;
-      audio.volume = MUSIC_VOLUME;
+    audio.volume = MUSIC_VOLUME;
+
+    const onInteraction = (e: Event) => {
+      if (audioStartedRef.current || userPausedRef.current) return;
+      // Não inicia se o clique foi no próprio botão de música
+      if (
+        e.target instanceof Element &&
+        e.target.closest("[data-music-toggle]")
+      )
+        return;
       audio
         .play()
-        .then(() => setMusicPlaying(true))
+        .then(() => {
+          audioStartedRef.current = true;
+          setMusicPlaying(true);
+        })
         .catch(() => {});
     };
 
-    window.addEventListener("click", startMusic, { once: true });
-    window.addEventListener("touchstart", startMusic, { once: true });
-    window.addEventListener("scroll", startMusic, { once: true });
+    // Tenta autoplay imediato (funciona no desktop)
+    audio
+      .play()
+      .then(() => {
+        audioStartedRef.current = true;
+        setMusicPlaying(true);
+      })
+      .catch(() => {
+        // Bloqueado (mobile) — aguarda primeira interação do usuário
+        window.addEventListener("click", onInteraction);
+        window.addEventListener("touchstart", onInteraction);
+        window.addEventListener("scroll", onInteraction);
+      });
 
     return () => {
-      window.removeEventListener("click", startMusic);
-      window.removeEventListener("touchstart", startMusic);
-      window.removeEventListener("scroll", startMusic);
+      window.removeEventListener("click", onInteraction);
+      window.removeEventListener("touchstart", onInteraction);
+      window.removeEventListener("scroll", onInteraction);
     };
   }, []);
 
@@ -85,6 +110,7 @@ export function WeddingRegistry() {
 
       {/* Music Toggle Button */}
       <button
+        data-music-toggle
         onClick={toggleMusic}
         aria-label={musicPlaying ? "Pausar música" : "Tocar música"}
         className="fixed bottom-5 right-5 z-50 flex items-center justify-center w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-lg hover:bg-white/30 transition-all duration-300"
