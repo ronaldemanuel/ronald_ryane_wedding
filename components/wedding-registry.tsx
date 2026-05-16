@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import {
   Gift,
@@ -10,10 +10,11 @@ import {
   Sparkles,
   Music,
   VolumeX,
-  MailOpen, // Importei esse ícone para o botão de entrada
+  MailOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils"; // Utilitário padrão do shadcn/ui para classes condicionais
 
 const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY!;
 const GIFT_REGISTRY_URL = process.env.NEXT_PUBLIC_GIFT_REGISTRY_URL!;
@@ -21,8 +22,10 @@ const MUSIC_VOLUME = parseFloat(process.env.NEXT_PUBLIC_MUSIC_VOLUME || "0.2");
 
 export function WeddingRegistry() {
   const [copied, setCopied] = useState(false);
-  const [musicPlaying, setMusicPlaying] = useState(false); // Começa falso
-  const [hasEntered, setHasEntered] = useState(false); // Novo estado para a tela de convite
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [hasEntered, setHasEntered] = useState(false);
+  // Novo estado para controlar quando a tela de boas-vindas pode ser removida do DOM
+  const [showOverlay, setShowOverlay] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const copyToClipboard = async () => {
@@ -50,7 +53,6 @@ export function WeddingRegistry() {
     }
   };
 
-  // Função disparada quando o usuário clica para entrar no site
   const handleEnterSite = () => {
     const audio = audioRef.current;
     if (audio) {
@@ -62,7 +64,13 @@ export function WeddingRegistry() {
         })
         .catch((err) => console.log("Áudio bloqueado:", err));
     }
+    // Ativa a transição de entrada do site e saída do overlay
     setHasEntered(true);
+
+    // Remove o overlay do DOM após o término da animação de saída (1 segundo)
+    setTimeout(() => {
+      setShowOverlay(false);
+    }, 1000);
   };
 
   return (
@@ -76,8 +84,14 @@ export function WeddingRegistry() {
       />
 
       {/* TELA DE BOAS-VINDAS / CONVITE */}
-      {!hasEntered && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#4A3728] backdrop-blur-md transition-opacity duration-1000">
+      {showOverlay && (
+        <div
+          className={cn(
+            "fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#4A3728] transition-all duration-1000 ease-in-out",
+            // Quando hasEntered for true, o overlay fica transparente e ignora cliques
+            hasEntered ? "opacity-0 pointer-events-none" : "opacity-100",
+          )}
+        >
           <Image
             src="/image/RR-Vintage.png"
             alt="Fundo"
@@ -102,53 +116,66 @@ export function WeddingRegistry() {
         </div>
       )}
 
-      {/* Music Toggle Button (Só aparece depois que entra) */}
-      {hasEntered && (
-        <button
-          onClick={toggleMusic}
-          aria-label={musicPlaying ? "Pausar música" : "Tocar música"}
-          className="fixed bottom-5 right-5 z-50 flex items-center justify-center w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-lg hover:bg-white/30 transition-all duration-300"
-        >
-          {musicPlaying ? (
-            <Music className="w-5 h-5 animate-pulse" />
-          ) : (
-            <VolumeX className="w-5 h-5" />
-          )}
-        </button>
-      )}
+      {/* 
+        MAIN CONTAINER
+      */}
+      <div
+        className={cn(
+          "relative w-full min-h-screen transition-opacity duration-1000 ease-in-out",
+          // Começa invisível e fica visível quando o usuário clica em abrir
+          hasEntered ? "opacity-100" : "opacity-0",
+        )}
+      >
+        {/* Music Toggle Button */}
+        {hasEntered && (
+          <button
+            onClick={toggleMusic}
+            aria-label={musicPlaying ? "Pausar música" : "Tocar música"}
+            className="fixed bottom-5 right-5 z-50 flex items-center justify-center w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-lg hover:bg-white/30 transition-all duration-300"
+          >
+            {musicPlaying ? (
+              <Music className="w-5 h-5 animate-pulse" />
+            ) : (
+              <VolumeX className="w-5 h-5" />
+            )}
+          </button>
+        )}
 
-      {/* Restante do seu site original... */}
-      <div className="absolute inset-0">
-        <Image
-          src="/image/RR-Vintage.png"
-          alt="Ronald & Ryane"
-          fill
-          className="object-cover object-[center_10%]"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50" />
-      </div>
-
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(30)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 bg-white/30 rounded-full animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${3 + Math.random() * 4}s`,
-            }}
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/image/RR-Vintage.png"
+            alt="Ronald & Ryane"
+            fill
+            className="object-cover object-[center_10%]"
+            priority
           />
-        ))}
-      </div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50" />
+        </div>
 
-      {/* Envolvi o conteúdo principal para só animar quando hasEntered for true */}
-      {hasEntered && (
+        {/* Floating particles animation */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-white/30 rounded-full animate-float"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${3 + Math.random() * 4}s`,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Content */}
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
           {/* Header */}
-          <div className="text-center mb-8 animate-fade-in">
+          {/* Adicionei animações condicionais para rodarem apenas quando entrar */}
+          <div
+            className={cn("text-center mb-8", hasEntered && "animate-fade-in")}
+          >
             <div className="flex items-center justify-center gap-2 mb-4">
               <Sparkles className="w-5 h-5 text-white/90 drop-shadow-lg animate-pulse" />
               <span className="text-white/90 font-sans text-sm tracking-[0.3em] uppercase ">
@@ -173,7 +200,12 @@ export function WeddingRegistry() {
           </div>
 
           {/* Cards Container */}
-          <div className="w-full max-w-md space-y-4 animate-slide-up">
+          <div
+            className={cn(
+              "w-full max-w-md space-y-4",
+              hasEntered && "animate-slide-up",
+            )}
+          >
             {/* Gift Registry Card */}
             <Card className="backdrop-blur-md bg-white/90 border-[#C9A86C]/40 shadow-2xl overflow-hidden group hover:shadow-[#C9A86C]/30 hover:border-[#C9A86C]/70 transition-all duration-500">
               <div className="p-6">
@@ -252,12 +284,18 @@ export function WeddingRegistry() {
             </Card>
           </div>
 
-          <p className="mt-8 text-center text-white/70 font-sans text-sm max-w-xs animate-fade-in-delayed">
+          {/* Footer Message */}
+          <p
+            className={cn(
+              "mt-8 text-center text-white/70 font-sans text-sm max-w-xs",
+              hasEntered && "animate-fade-in-delayed",
+            )}
+          >
             Agradecemos de coração por fazer parte deste momento tão especial em
             nossas vidas
           </p>
         </div>
-      )}
+      </div>
 
       <style jsx>{`
         @keyframes float {
@@ -304,12 +342,12 @@ export function WeddingRegistry() {
 
         .animate-slide-up {
           animation: slide-up 1s ease-out 0.3s forwards;
-          opacity: 0;
+          /* Removido opacity: 0 daqui, controlado pelo container principal ou cn */
         }
 
         .animate-fade-in-delayed {
           animation: fade-in 1s ease-out 0.8s forwards;
-          opacity: 0;
+          /* Removido opacity: 0 daqui, controlado pelo container principal ou cn */
         }
       `}</style>
     </div>
