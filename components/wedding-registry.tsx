@@ -1,16 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Gift, Heart, Copy, Check, Sparkles } from "lucide-react";
+import {
+  Gift,
+  Heart,
+  Copy,
+  Check,
+  Sparkles,
+  Music,
+  VolumeX,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-const PIX_KEY = "sua-chave-pix-aqui";
-const GIFT_REGISTRY_URL = "https://lista.exemplo.com";
+const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY!;
+const GIFT_REGISTRY_URL = process.env.NEXT_PUBLIC_GIFT_REGISTRY_URL!;
+const MUSIC_VOLUME = parseFloat(process.env.NEXT_PUBLIC_MUSIC_VOLUME || "0.2");
 
 export function WeddingRegistry() {
   const [copied, setCopied] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const hasInteracted = useRef(false);
 
   const copyToClipboard = async () => {
     try {
@@ -22,8 +34,67 @@ export function WeddingRegistry() {
     }
   };
 
+  const toggleMusic = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (musicPlaying) {
+      audio.pause();
+      setMusicPlaying(false);
+    } else {
+      audio
+        .play()
+        .then(() => setMusicPlaying(true))
+        .catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const startMusic = () => {
+      if (hasInteracted.current) return;
+      hasInteracted.current = true;
+      audio.volume = MUSIC_VOLUME;
+      audio
+        .play()
+        .then(() => setMusicPlaying(true))
+        .catch(() => {});
+    };
+
+    window.addEventListener("click", startMusic, { once: true });
+    window.addEventListener("touchstart", startMusic, { once: true });
+    window.addEventListener("scroll", startMusic, { once: true });
+
+    return () => {
+      window.removeEventListener("click", startMusic);
+      window.removeEventListener("touchstart", startMusic);
+      window.removeEventListener("scroll", startMusic);
+    };
+  }, []);
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Background Music */}
+      <audio
+        ref={audioRef}
+        src="/audio/eu-sei-que-vou-te-amar-mono.mp3"
+        loop
+        preload="auto"
+      />
+
+      {/* Music Toggle Button */}
+      <button
+        onClick={toggleMusic}
+        aria-label={musicPlaying ? "Pausar música" : "Tocar música"}
+        className="fixed bottom-5 right-5 z-50 flex items-center justify-center w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-lg hover:bg-white/30 transition-all duration-300"
+      >
+        {musicPlaying ? (
+          <Music className="w-5 h-5 animate-pulse" />
+        ) : (
+          <VolumeX className="w-5 h-5" />
+        )}
+      </button>
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
@@ -148,14 +219,10 @@ export function WeddingRegistry() {
                 </div>
               </div>
 
-              <div className="mb-4 p-3 bg-[#F5EDE8] rounded-lg border border-[#E0D0C8]">
-                <p className="text-xs text-[#6B5344] font-sans mb-1">
-                  Chave PIX:
-                </p>
-                <p className="font-mono text-sm text-[#4A3728] break-all">
-                  {PIX_KEY}
-                </p>
-              </div>
+              <p className="text-sm text-[#6B5344] font-sans mb-4">
+                Clique no botão abaixo para copiar o código PIX e cole
+                diretamente no seu banco.
+              </p>
 
               <Button
                 onClick={copyToClipboard}
@@ -170,7 +237,7 @@ export function WeddingRegistry() {
                 ) : (
                   <>
                     <Copy className="w-4 h-4 mr-2" />
-                    Copiar Chave PIX
+                    Copiar PIX Copia e Cola
                   </>
                 )}
               </Button>
