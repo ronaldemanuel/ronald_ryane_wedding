@@ -10,6 +10,7 @@ import {
   Sparkles,
   Music,
   VolumeX,
+  MailOpen, // Importei esse ícone para o botão de entrada
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,10 +21,9 @@ const MUSIC_VOLUME = parseFloat(process.env.NEXT_PUBLIC_MUSIC_VOLUME || "0.2");
 
 export function WeddingRegistry() {
   const [copied, setCopied] = useState(false);
-  const [musicPlaying, setMusicPlaying] = useState(true); // otimista: começa como "tocando"
+  const [musicPlaying, setMusicPlaying] = useState(false); // Começa falso
+  const [hasEntered, setHasEntered] = useState(false); // Novo estado para a tela de convite
   const audioRef = useRef<HTMLAudioElement>(null);
-  const audioStartedRef = useRef(false); // áudio realmente iniciou?
-  const userPausedRef = useRef(false); // usuário pausou explicitamente?
 
   const copyToClipboard = async () => {
     try {
@@ -38,65 +38,32 @@ export function WeddingRegistry() {
   const toggleMusic = () => {
     const audio = audioRef.current;
     if (!audio) return;
+
     if (musicPlaying) {
       audio.pause();
-      userPausedRef.current = true;
       setMusicPlaying(false);
     } else {
-      userPausedRef.current = false;
       audio
         .play()
-        .then(() => {
-          audioStartedRef.current = true;
-          setMusicPlaying(true);
-        })
+        .then(() => setMusicPlaying(true))
         .catch(() => {});
     }
   };
 
-  useEffect(() => {
+  // Função disparada quando o usuário clica para entrar no site
+  const handleEnterSite = () => {
     const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.volume = MUSIC_VOLUME;
-
-    const onInteraction = (e: Event) => {
-      if (audioStartedRef.current || userPausedRef.current) return;
-      // Não inicia se o clique foi no próprio botão de música
-      if (
-        e.target instanceof Element &&
-        e.target.closest("[data-music-toggle]")
-      )
-        return;
+    if (audio) {
+      audio.volume = MUSIC_VOLUME;
       audio
         .play()
         .then(() => {
-          audioStartedRef.current = true;
           setMusicPlaying(true);
         })
-        .catch(() => {});
-    };
-
-    // Tenta autoplay imediato (funciona no desktop)
-    audio
-      .play()
-      .then(() => {
-        audioStartedRef.current = true;
-        setMusicPlaying(true);
-      })
-      .catch(() => {
-        // Bloqueado (mobile) — aguarda primeira interação do usuário
-        window.addEventListener("click", onInteraction);
-        window.addEventListener("touchstart", onInteraction);
-        window.addEventListener("scroll", onInteraction);
-      });
-
-    return () => {
-      window.removeEventListener("click", onInteraction);
-      window.removeEventListener("touchstart", onInteraction);
-      window.removeEventListener("scroll", onInteraction);
-    };
-  }, []);
+        .catch((err) => console.log("Áudio bloqueado:", err));
+    }
+    setHasEntered(true);
+  };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -108,20 +75,49 @@ export function WeddingRegistry() {
         preload="auto"
       />
 
-      {/* Music Toggle Button */}
-      <button
-        data-music-toggle
-        onClick={toggleMusic}
-        aria-label={musicPlaying ? "Pausar música" : "Tocar música"}
-        className="fixed bottom-5 right-5 z-50 flex items-center justify-center w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-lg hover:bg-white/30 transition-all duration-300"
-      >
-        {musicPlaying ? (
-          <Music className="w-5 h-5 animate-pulse" />
-        ) : (
-          <VolumeX className="w-5 h-5" />
-        )}
-      </button>
-      {/* Background Image */}
+      {/* TELA DE BOAS-VINDAS / CONVITE */}
+      {!hasEntered && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#4A3728] backdrop-blur-md transition-opacity duration-1000">
+          <Image
+            src="/image/RR-Vintage.png"
+            alt="Fundo"
+            fill
+            className="object-cover opacity-30 object-[center_10%]"
+          />
+          <div className="relative z-10 flex flex-col items-center animate-fade-in">
+            <h1 className="font-serif text-4xl md:text-5xl text-[#E8D4CE] mb-6 drop-shadow-lg text-center">
+              Ronald & Ryane
+            </h1>
+            <p className="text-white/80 font-sans tracking-widest uppercase text-sm mb-8">
+              31 de Julho de 2026
+            </p>
+            <Button
+              onClick={handleEnterSite}
+              className="bg-[#C9A86C] hover:bg-[#b8945a] text-white px-8 py-6 rounded-full font-serif text-lg tracking-wide shadow-2xl transition-transform hover:scale-105 animate-pulse"
+            >
+              <MailOpen className="w-5 h-5 mr-2" />
+              Abrir
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Music Toggle Button (Só aparece depois que entra) */}
+      {hasEntered && (
+        <button
+          onClick={toggleMusic}
+          aria-label={musicPlaying ? "Pausar música" : "Tocar música"}
+          className="fixed bottom-5 right-5 z-50 flex items-center justify-center w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-lg hover:bg-white/30 transition-all duration-300"
+        >
+          {musicPlaying ? (
+            <Music className="w-5 h-5 animate-pulse" />
+          ) : (
+            <VolumeX className="w-5 h-5" />
+          )}
+        </button>
+      )}
+
+      {/* Restante do seu site original... */}
       <div className="absolute inset-0">
         <Image
           src="/image/RR-Vintage.png"
@@ -133,7 +129,6 @@ export function WeddingRegistry() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50" />
       </div>
 
-      {/* Floating particles animation */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(30)].map((_, i) => (
           <div
@@ -149,134 +144,120 @@ export function WeddingRegistry() {
         ))}
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
-        {/* Header */}
-        <div className="text-center mb-8 animate-fade-in">
-          {/* Logo */}
-          {/* <div className="flex justify-center mb-6">
-            <div className="bg-white/95 rounded-2xl p-0 shadow-2xl shadow-black/20 backdrop-blur-sm">
-              <div className="relative w-32 h-32 md:w-32 md:h-32">
-                <Image
-                  src="/rr.png"
-                  alt="Ronald & Ryane"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
+      {/* Envolvi o conteúdo principal para só animar quando hasEntered for true */}
+      {hasEntered && (
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
+          {/* Header */}
+          <div className="text-center mb-8 animate-fade-in">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-white/90 drop-shadow-lg animate-pulse" />
+              <span className="text-white/90 font-sans text-sm tracking-[0.3em] uppercase ">
+                Nosso Casamento
+              </span>
+              <Sparkles className="w-5 h-5 text-white/90 drop-shadow-lg animate-pulse" />
             </div>
-          </div> */}
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-white/90 drop-shadow-lg animate-pulse" />
-            <span className="text-white/90 font-sans text-sm tracking-[0.3em] uppercase ">
-              Nosso Casamento
-            </span>
 
-            <Sparkles className="w-5 h-5 text-white/90 drop-shadow-lg animate-pulse" />
+            <h1 className="font-serif text-5xl md:text-7xl font-medium text-white mb-3 drop-shadow-lg text-balance">
+              Ronald & Ryane
+            </h1>
+
+            <p className="text-white/90 font-serif text-xl md:text-2xl mb-4 tracking-wide">
+              31 de Julho de 2026
+            </p>
+
+            <div className="flex items-center justify-center gap-3 text-white/80">
+              <div className="h-px w-12 bg-gradient-to-r from-transparent to-white/60" />
+              <Heart className="w-4 h-4 text-primary fill-primary animate-pulse" />
+              <div className="h-px w-12 bg-gradient-to-l from-transparent to-white/60" />
+            </div>
           </div>
 
-          <h1 className="font-serif text-5xl md:text-7xl font-medium text-white mb-3 drop-shadow-lg text-balance">
-            Ronald & Ryane
-          </h1>
-
-          <p className="text-white/90 font-serif text-xl md:text-2xl mb-4 tracking-wide">
-            31 de Julho de 2026
-          </p>
-
-          <div className="flex items-center justify-center gap-3 text-white/80">
-            <div className="h-px w-12 bg-gradient-to-r from-transparent to-white/60" />
-            <Heart className="w-4 h-4 text-primary fill-primary animate-pulse" />
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-white/60" />
-          </div>
-        </div>
-
-        {/* Cards Container */}
-        <div className="w-full max-w-md space-y-4 animate-slide-up">
-          {/* Gift Registry Card */}
-          <Card className="backdrop-blur-md bg-white/90 border-[#C9A86C]/40 shadow-2xl overflow-hidden group hover:shadow-[#C9A86C]/30 hover:border-[#C9A86C]/70 transition-all duration-500">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 rounded-full bg-[#C9A86C]/20 group-hover:bg-[#C9A86C]/35 transition-colors">
-                  <Gift className="w-6 h-6 text-[#C9A86C]" />
+          {/* Cards Container */}
+          <div className="w-full max-w-md space-y-4 animate-slide-up">
+            {/* Gift Registry Card */}
+            <Card className="backdrop-blur-md bg-white/90 border-[#C9A86C]/40 shadow-2xl overflow-hidden group hover:shadow-[#C9A86C]/30 hover:border-[#C9A86C]/70 transition-all duration-500">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 rounded-full bg-[#C9A86C]/20 group-hover:bg-[#C9A86C]/35 transition-colors">
+                    <Gift className="w-6 h-6 text-[#C9A86C]" />
+                  </div>
+                  <div>
+                    <h2 className="font-serif text-xl text-[#4A3728]">
+                      Lista de Presentes
+                    </h2>
+                    <p className="text-sm text-[#6B5344] font-sans">
+                      Escolha um presente especial para nós
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-serif text-xl text-[#4A3728]">
-                    Lista de Presentes
-                  </h2>
-                  <p className="text-sm text-[#6B5344] font-sans">
-                    Escolha um presente especial para nós
-                  </p>
-                </div>
-              </div>
 
-              <Button
-                asChild
-                className="w-full bg-[#C9A86C] hover:bg-[#b8945a] text-white font-sans tracking-wide shadow-md shadow-[#C9A86C]/30 group-hover:scale-[1.02] transition-transform duration-300"
-                size="lg"
-              >
-                <a
-                  href={GIFT_REGISTRY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2"
+                <Button
+                  asChild
+                  className="w-full bg-[#C9A86C] hover:bg-[#b8945a] text-white font-sans tracking-wide shadow-md shadow-[#C9A86C]/30 group-hover:scale-[1.02] transition-transform duration-300"
+                  size="lg"
                 >
-                  <Gift className="w-4 h-4" />
-                  Ver Lista de Presentes
-                </a>
-              </Button>
-            </div>
-          </Card>
-
-          {/* PIX Card */}
-          <Card className="backdrop-blur-md bg-white/90 border-[#D4A574]/40 shadow-2xl overflow-hidden group hover:shadow-[#D4A574]/30 hover:border-[#D4A574]/70 transition-all duration-500">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 rounded-full bg-[#E8D4CE]/60 group-hover:bg-[#E8D4CE] transition-colors">
-                  <Heart className="w-6 h-6 text-[#D4A574] fill-[#D4A574]/50" />
-                </div>
-                <div>
-                  <h2 className="font-serif text-xl text-[#4A3728]">
-                    Presente em Dinheiro
-                  </h2>
-                  <p className="text-sm text-[#6B5344] font-sans">
-                    Contribua com qualquer valor via PIX
-                  </p>
-                </div>
+                  <a
+                    href={GIFT_REGISTRY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <Gift className="w-4 h-4" />
+                    Ver Lista de Presentes
+                  </a>
+                </Button>
               </div>
+            </Card>
 
-              <p className="text-sm text-[#6B5344] font-sans mb-4">
-                Clique no botão abaixo para copiar o código PIX e cole
-                diretamente no seu banco.
-              </p>
+            {/* PIX Card */}
+            <Card className="backdrop-blur-md bg-white/90 border-[#D4A574]/40 shadow-2xl overflow-hidden group hover:shadow-[#D4A574]/30 hover:border-[#D4A574]/70 transition-all duration-500">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 rounded-full bg-[#E8D4CE]/60 group-hover:bg-[#E8D4CE] transition-colors">
+                    <Heart className="w-6 h-6 text-[#D4A574] fill-[#D4A574]/50" />
+                  </div>
+                  <div>
+                    <h2 className="font-serif text-xl text-[#4A3728]">
+                      Presente em Dinheiro
+                    </h2>
+                    <p className="text-sm text-[#6B5344] font-sans">
+                      Contribua com qualquer valor via PIX
+                    </p>
+                  </div>
+                </div>
 
-              <Button
-                onClick={copyToClipboard}
-                className="w-full bg-[#E8D4CE] hover:bg-[#D4A574] border border-[#D4A574]/60 hover:border-[#D4A574] text-[#4A3728] hover:text-white font-sans tracking-wide shadow-sm group-hover:scale-[1.02] transition-all duration-300"
-                size="lg"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4 mr-2 text-green-600" />
-                    Copiado!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copiar PIX Copia e Cola
-                  </>
-                )}
-              </Button>
-            </div>
-          </Card>
+                <p className="text-sm text-[#6B5344] font-sans mb-4">
+                  Clique no botão abaixo para copiar o código PIX e cole
+                  diretamente no seu banco.
+                </p>
+
+                <Button
+                  onClick={copyToClipboard}
+                  className="w-full bg-[#E8D4CE] hover:bg-[#D4A574] border border-[#D4A574]/60 hover:border-[#D4A574] text-[#4A3728] hover:text-white font-sans tracking-wide shadow-sm group-hover:scale-[1.02] transition-all duration-300"
+                  size="lg"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2 text-green-600" />
+                      Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copiar PIX Copia e Cola
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+          </div>
+
+          <p className="mt-8 text-center text-white/70 font-sans text-sm max-w-xs animate-fade-in-delayed">
+            Agradecemos de coração por fazer parte deste momento tão especial em
+            nossas vidas
+          </p>
         </div>
-
-        {/* Footer Message */}
-        <p className="mt-8 text-center text-white/70 font-sans text-sm max-w-xs animate-fade-in-delayed">
-          Agradecemos de coração por fazer parte deste momento tão especial em
-          nossas vidas
-        </p>
-      </div>
+      )}
 
       <style jsx>{`
         @keyframes float {
